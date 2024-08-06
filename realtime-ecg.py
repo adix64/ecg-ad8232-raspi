@@ -1,13 +1,19 @@
-import RPi.GPIO as GPIO
+import time
+import board
+import busio
+from adafruit_ads1x15.ads1115 import ADS1115
+from adafruit_ads1x15.analog_in import AnalogIn
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-import time
 
-# Pin setup
-ECG_PIN = 18  # The GPIO pin connected to the AD8232 OUTPUT
+# Create the I2C bus
+i2c = busio.I2C(board.SCL, board.SDA)
 
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(ECG_PIN, GPIO.IN)
+# Create the ADS object
+ads = ADS1115(i2c)
+
+# Create single-ended input on channel 0
+chan = AnalogIn(ads, ADS1115.P0)
 
 # Create figure for plotting
 fig, ax = plt.subplots()
@@ -18,12 +24,12 @@ ys = []  # Store ECG signal
 line, = ax.plot(xs, ys)
 plt.title('Real-Time ECG Signal')
 plt.xlabel('Time (s)')
-plt.ylabel('Amplitude')
+plt.ylabel('Voltage (V)')
 
 # This function is called periodically from FuncAnimation
 def animate(i, xs, ys):
-    # Read data from the GPIO pin
-    ecg_value = GPIO.input(ECG_PIN)
+    # Read data from the ADS1115
+    ecg_value = chan.voltage
     
     # Add x and y to lists
     current_time = time.time() - start_time
@@ -52,6 +58,3 @@ ani = animation.FuncAnimation(fig, animate, fargs=(xs, ys), interval=10)
 
 # Show the plot
 plt.show()
-
-# Clean up GPIO on exit
-GPIO.cleanup()
